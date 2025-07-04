@@ -1,20 +1,17 @@
-import gradio as gr
 import json
 import time
 import requests
 import networkx as nx
 import torch
-from tqdm import tqdm
 from transformers import AutoTokenizer, AutoModelForCausalLM
-import os
-from pathlib import Path
+import gradio as gr
 import html
 
 # Configuration
 SEARCH_URL = "https://api.semanticscholar.org/graph/v1/paper/search"
 REFERENCES_URL = "https://api.semanticscholar.org/graph/v1/paper/{paper_id}/references"
 LOCAL_PATH = "./saved_models/gemma-2-2b-it"
-HEADERS = {"X-API-KEY": "qHEjjYCPo62SBqzFwxEQh3TQIcFbkUB96moYyi6Q"}
+HEADERS = {"X-API-KEY": ""}
 
 # Global variables to store loaded model and tokenizer
 model = None
