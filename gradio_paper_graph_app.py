@@ -3,15 +3,19 @@ import time
 import requests
 import networkx as nx
 import torch
+from huggingface_hub import login
 from transformers import AutoTokenizer, AutoModelForCausalLM
 import gradio as gr
 import html
+import os
 
 # Configuration
 SEARCH_URL = "https://api.semanticscholar.org/graph/v1/paper/search"
 REFERENCES_URL = "https://api.semanticscholar.org/graph/v1/paper/{paper_id}/references"
 LOCAL_PATH = "./saved_models/gemma-2-2b-it"
+HF_MODEL_NAME = "google/gemma-2-2b-it"  # Hugging Face model identifier
 HEADERS = {"X-API-KEY": ""}
+HUGGINGFACE_TOKEN = "hf_your_token_here"
 
 # Global variables to store loaded model and tokenizer
 model = None
@@ -28,21 +32,84 @@ def get_device():
         return torch.device("cpu")
 
 
+def check_and_download_model():
+    """Check if model exists locally, if not download from Hugging Face"""
+    # Check if local model directory exists and has required files
+    required_files = ["config.json", "tokenizer.json", "tokenizer_config.json"]
+    model_files_exist = os.path.exists(LOCAL_PATH) and all(
+        os.path.exists(os.path.join(LOCAL_PATH, f)) for f in required_files
+    )
+
+    if not model_files_exist:
+        print(f"Model not found locally at {LOCAL_PATH}")
+        print(f"Downloading {HF_MODEL_NAME} from Hugging Face...")
+
+        try:
+            # Create directory if it doesn't exist
+            login(HUGGINGFACE_TOKEN)
+            os.makedirs(LOCAL_PATH, exist_ok=True)
+
+            # Download model and tokenizer from Hugging Face
+            print("Downloading tokenizer...")
+            tokenizer = AutoTokenizer.from_pretrained(HF_MODEL_NAME)
+            tokenizer.save_pretrained(LOCAL_PATH)
+
+            print("Downloading model (this may take a while - ~5GB)...")
+            model = AutoModelForCausalLM.from_pretrained(
+                HF_MODEL_NAME, torch_dtype=torch.bfloat16
+            )
+            model.save_pretrained(LOCAL_PATH)
+
+            print(f"Model successfully downloaded and saved to {LOCAL_PATH}")
+            return True
+
+        except Exception as e:
+            print(f"Error downloading model: {str(e)}")
+            print("Please check your internet connection and try again.")
+            return False
+    else:
+        print(f"Model found locally at {LOCAL_PATH}")
+        return True
+
+
 def load_model():
     """Load the model and tokenizer once at startup"""
     global model, tokenizer, device
 
     if model is None:
+        # First check and download model if needed
+        if not check_and_download_model():
+            raise Exception("Failed to download model from Hugging Face")
+
         device = get_device()
         print(f"Loading model on device: {device}")
 
-        model = AutoModelForCausalLM.from_pretrained(
-            LOCAL_PATH, torch_dtype=torch.bfloat16
-        )
-        tokenizer = AutoTokenizer.from_pretrained(LOCAL_PATH)
-        model = model.to(device)
-        model.eval()
-        print("Model loaded successfully!")
+        try:
+            model = AutoModelForCausalLM.from_pretrained(
+                LOCAL_PATH, torch_dtype=torch.bfloat16
+            )
+            tokenizer = AutoTokenizer.from_pretrained(LOCAL_PATH)
+            model = model.to(device)
+            model.eval()
+            print("Model loaded successfully!")
+        except Exception as e:
+            print(f"Error loading model: {str(e)}")
+            # If loading fails, try downloading again
+            print("Attempting to re-download model...")
+            if os.path.exists(LOCAL_PATH):
+                import shutil
+
+                shutil.rmtree(LOCAL_PATH)
+            if check_and_download_model():
+                model = AutoModelForCausalLM.from_pretrained(
+                    LOCAL_PATH, torch_dtype=torch.bfloat16
+                )
+                tokenizer = AutoTokenizer.from_pretrained(LOCAL_PATH)
+                model = model.to(device)
+                model.eval()
+                print("Model loaded successfully after re-download!")
+            else:
+                raise Exception("Failed to load model after multiple attempts")
 
 
 def get_response(url, params=None):
@@ -211,6 +278,16 @@ def build_paper_graph(paper_title, topic, depth=2, max_refs=10):
             }
             html_content = create_d3_html(test_data)
             return "Test graph created: 3 nodes, 2 edges", html_content
+
+        # Check if model needs to be downloaded (inform user)
+        if not os.path.exists(LOCAL_PATH) or not os.path.exists(
+            os.path.join(LOCAL_PATH, "config.json")
+        ):
+            # return (
+            # "Downloading AI model from Hugging Face (~5GB). This may take several minutes on first run...",
+            # "<p>Please wait while the model is being downloaded...</p>",
+            # )
+            pass
 
         # Load model if not already loaded
         load_model()
@@ -586,7 +663,10 @@ def create_gradio_interface():
         3. Adjust search depth and maximum references as needed
         4. Click "Build Citation Network" to generate the interactive visualization
         
-        **Note:** The first run may take longer as it loads the AI model for filtering.
+        **Note:** 
+        - The first run will automatically download the AI model (~5GB) from Hugging Face
+        - This may take several minutes depending on your internet connection
+        - Subsequent runs will be much faster as the model is cached locally
         """
         )
 

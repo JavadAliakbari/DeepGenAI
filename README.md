@@ -1,6 +1,24 @@
 # Paper Citation Network Builder
 
-An AI-powered application that builds and visualizes citation networks for academic papers using Semantic Scholar API and local language models for intelligent filtering.
+An AI-powered appli### Configuration
+
+### API Key Setup
+The application uses Semantic Scholar API. Update the API key in the code:
+```python
+HEADERS = {"X-API-KEY": "your_api_key_here"}
+```
+
+### Model Configuration
+The application automatically downloads the Gemma-2-2b-it model from Hugging Face on first run.
+- **Default location**: `./saved_models/gemma-2-2b-it/`
+- **Model size**: ~5GB
+- **Source**: `google/gemma-2-2b-it` on Hugging Face
+
+If you want to use a different model or location, update these variables in the code:
+```python
+LOCAL_PATH = "./path/to/your/model"
+HF_MODEL_NAME = "your_preferred_model"
+```uilds and visualizes citation networks for academic papers using Semantic Scholar API and local language models for intelligent filtering.
 
 ## Features
 
@@ -16,12 +34,33 @@ An AI-powered application that builds and visualizes citation networks for acade
 - GPU with CUDA support (optional, for faster AI processing)
 - Apple Silicon Mac (MPS support available)
 - Internet connection for Semantic Scholar API
+- **Hugging Face account** (free) with access to Gemma 2B model
 
 ## Installation
 
 1. **Clone or download the project files**
 
-2. **Set up a virtual environment** (recommended):
+2. **Set up Hugging Face access**:
+   
+   **a) Create a Hugging Face account:**
+   - Go to [huggingface.co](https://huggingface.co) and create a free account
+   
+   **b) Accept Gemma 2B license:**
+   - Visit the [Gemma 2B model page](https://huggingface.co/google/gemma-2-2b-it)
+   - Click "Agree and access repository" to accept the license terms
+   - **Note**: You must accept the license to download the model
+   
+   **c) Get your Hugging Face token:**
+   - Go to [Settings > Access Tokens](https://huggingface.co/settings/tokens)
+   - Click "New token" and create a token with "Read" permissions
+   - Copy the token (starts with `hf_`)
+   
+   **d) Add your token to the code:**
+   - Open `gradio_paper_graph_app.py`
+   - Find the line: `HUGGINGFACE_TOKEN = ""`
+   - Replace it with: `HUGGINGFACE_TOKEN = "your_hf_token_here"`
+
+3. **Set up a virtual environment** (recommended):
    
    **Using venv (Python 3.3+):**
    ```bash
@@ -44,37 +83,39 @@ An AI-powered application that builds and visualizes citation networks for acade
    conda activate paper_graph_env
    ```
 
-3. **Install dependencies**:
+4. **Install dependencies**:
    ```bash
    pip install -r requirements.txt
    ```
 
-4. **Download the Gemma model** (if not already present):
-   The application expects the Gemma-2-2b-it model in `./saved_models/gemma-2-2b-it/`
-   
-   You can download it using Hugging Face transformers:
-   ```python
-   from transformers import AutoTokenizer, AutoModelForCausalLM
-   
-   model = AutoModelForCausalLM.from_pretrained("google/gemma-2-2b-it")
-   tokenizer = AutoTokenizer.from_pretrained("google/gemma-2-2b-it")
-   
-   model.save_pretrained("./saved_models/gemma-2-2b-it")
-   tokenizer.save_pretrained("./saved_models/gemma-2-2b-it")
-   ```
+**Note:** The Gemma model will be automatically downloaded from Hugging Face on first run (~5GB). Make sure you have a stable internet connection and sufficient disk space.
 
 ## Configuration
 
-### API Key Setup
+### Required Setup
+
+**Hugging Face Token:**
+The application requires a Hugging Face token to download the Gemma model. Make sure you've completed step 2 above and added your token:
+```python
+HUGGINGFACE_TOKEN = "hf_your_token_here"
+```
+
+**API Key Setup:**
 The application uses Semantic Scholar API. Update the API key in the code:
 ```python
 HEADERS = {"X-API-KEY": "your_api_key_here"}
 ```
 
-### Model Path
-If your Gemma model is in a different location, update:
+### Model Configuration
+The application automatically downloads the Gemma-2-2b-it model from Hugging Face on first run.
+- **Default location**: `./saved_models/gemma-2-2b-it/`
+- **Model size**: ~5GB
+- **Source**: `google/gemma-2-2b-it` on Hugging Face
+
+If you want to use a different model or location, update these variables in the code:
 ```python
-LOCAL_PATH = "./path/to/your/gemma-model"
+LOCAL_PATH = "./path/to/your/model"
+HF_MODEL_NAME = "your_preferred_model"
 ```
 
 ## Usage
@@ -137,10 +178,28 @@ The application uses a local Gemma-2-2b model to determine if each paper's abstr
 
 ### Performance
 - **Device Detection**: Automatically uses GPU (CUDA/MPS) if available
-- **Caching**: Model loads once and stays in memory
+- **Model Caching**: Model downloads once and stays cached locally
+- **Auto-download**: First run automatically downloads model from Hugging Face
 - **Rate Limiting**: Respects API rate limits with retry logic
 
 ## Troubleshooting
+
+### Hugging Face Issues
+
+1. **License not accepted**:
+   - Go to [Gemma 2B model page](https://huggingface.co/google/gemma-2-2b-it)
+   - Make sure you've clicked "Agree and access repository"
+   - You must accept the license before downloading
+
+2. **Invalid token errors**:
+   - Check your token is correctly added to `HUGGINGFACE_TOKEN`
+   - Verify token has "Read" permissions
+   - Generate a new token if needed at [HF Settings](https://huggingface.co/settings/tokens)
+
+3. **Authentication failed**:
+   - Ensure you're logged into Hugging Face account
+   - Token should start with `hf_`
+   - Check internet connection to huggingface.co
 
 ### Virtual Environment Issues
 
@@ -164,16 +223,29 @@ The application uses a local Gemma-2-2b model to determine if each paper's abstr
 ### Common Issues
 
 1. **Model loading errors**:
-   - Ensure the Gemma model is properly downloaded
-   - Check available memory (model requires ~5GB)
+   - First run: Model will auto-download (~5GB), ensure stable internet
+   - Check available disk space (need ~10GB free for download + extraction)
    - Verify torch installation matches your hardware
+   - If download fails, delete `./saved_models/` folder and try again
 
-2. **API errors**:
+2. **Download issues**:
+   - Check internet connection stability
+   - Ensure firewall allows access to huggingface.co
+   - For slow connections, consider downloading manually:
+     ```python
+     from transformers import AutoTokenizer, AutoModelForCausalLM
+     model = AutoModelForCausalLM.from_pretrained("google/gemma-2-2b-it")
+     tokenizer = AutoTokenizer.from_pretrained("google/gemma-2-2b-it")
+     model.save_pretrained("./saved_models/gemma-2-2b-it")
+     tokenizer.save_pretrained("./saved_models/gemma-2-2b-it")
+     ```
+
+3. **API errors**:
    - Check your Semantic Scholar API key
    - Verify internet connection
    - Some papers may not be found (try exact titles)
 
-3. **Visualization not showing**:
+4. **Visualization not showing**:
    - Check browser console for JavaScript errors
    - Ensure D3.js is loading (check debug info)
    - Try the test mode by entering "test" as paper title
@@ -202,6 +274,16 @@ Enter "test" as the paper title to generate a simple test graph and verify the v
 - **transformers**: Hugging Face model library
 - **networkx**: Graph processing
 - **requests**: HTTP API calls
+
+## Security Note
+
+⚠️ **Important**: This code currently has the Hugging Face token hardcoded in the source file. For production use, consider:
+
+- Using environment variables: `os.getenv('HUGGINGFACE_TOKEN')`
+- Using `.env` files with `python-dotenv`
+- Passing tokens as command line arguments
+
+Never commit your actual tokens to version control.
 
 ## License
 
