@@ -18,7 +18,8 @@ If you want to use a different model or location, update these variables in the 
 ```python
 LOCAL_PATH = "./path/to/your/model"
 HF_MODEL_NAME = "your_preferred_model"
-```uilds and visualizes citation networks for academic papers using Semantic Scholar API and local language models for intelligent filtering.
+```
+builds and visualizes citation networks for academic papers using Semantic Scholar API and local language models for intelligent filtering.
 
 ## Features
 
