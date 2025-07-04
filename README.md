@@ -21,12 +21,35 @@ An AI-powered application that builds and visualizes citation networks for acade
 
 1. **Clone or download the project files**
 
-2. **Install dependencies**:
+2. **Set up a virtual environment** (recommended):
+   
+   **Using venv (Python 3.3+):**
+   ```bash
+   # Create virtual environment
+   python -m venv paper_graph_env
+   
+   # Activate virtual environment
+   # On macOS/Linux:
+   source paper_graph_env/bin/activate
+   # On Windows:
+   # paper_graph_env\Scripts\activate
+   ```
+   
+   **Using conda:**
+   ```bash
+   # Create virtual environment with Python 3.8+
+   conda create -n paper_graph_env python=3.9
+   
+   # Activate virtual environment
+   conda activate paper_graph_env
+   ```
+
+3. **Install dependencies**:
    ```bash
    pip install -r requirements.txt
    ```
 
-3. **Download the Gemma model** (if not already present):
+4. **Download the Gemma model** (if not already present):
    The application expects the Gemma-2-2b-it model in `./saved_models/gemma-2-2b-it/`
    
    You can download it using Hugging Face transformers:
@@ -56,12 +79,22 @@ LOCAL_PATH = "./path/to/your/gemma-model"
 
 ## Usage
 
-1. **Start the application**:
+1. **Activate your virtual environment** (if using one):
+   ```bash
+   # For venv:
+   source paper_graph_env/bin/activate  # macOS/Linux
+   # paper_graph_env\Scripts\activate   # Windows
+   
+   # For conda:
+   conda activate paper_graph_env
+   ```
+
+2. **Start the application**:
    ```bash
    python gradio_paper_graph_app.py
    ```
 
-2. **Access the web interface**:
+3. **Access the web interface**:
    Open your browser and go to `http://localhost:8080`
 
 3. **Build a citation network**:
@@ -108,6 +141,25 @@ The application uses a local Gemma-2-2b model to determine if each paper's abstr
 - **Rate Limiting**: Respects API rate limits with retry logic
 
 ## Troubleshooting
+
+### Virtual Environment Issues
+
+1. **Virtual environment not found**:
+   - Make sure you've activated the virtual environment before running the app
+   - Verify the environment exists: `conda env list` or check if the folder exists
+
+2. **Package not found errors**:
+   - Ensure you're in the correct virtual environment
+   - Reinstall requirements: `pip install -r requirements.txt`
+
+3. **Deactivating virtual environment**:
+   ```bash
+   # For venv:
+   deactivate
+   
+   # For conda:
+   conda deactivate
+   ```
 
 ### Common Issues
 
